@@ -21,6 +21,7 @@ public class Task3 extends Thread {
     
     private int maxValue, notifyEvery;
     boolean exit = false;
+    private boolean suspended = false;
     
     private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
     
@@ -34,6 +35,16 @@ public class Task3 extends Thread {
         doNotify("Task3 start.");
         for (int i = 0; i < maxValue; i++) {
             
+            synchronized(this) {
+                if (suspended) {
+                    try {
+                        wait();
+                    } catch (InterruptedException ex) {
+                        break;
+                    }
+                }
+            }
+                        
             if (i % notifyEvery == 0) {
                 doNotify("It happened in Task3: " + i);
             }
@@ -41,12 +52,23 @@ public class Task3 extends Thread {
             if (exit) {
                 return;
             }
+            
+
         }
         doNotify("Task3 done.");
     }
     
     public void end() {
         exit = true;
+    }
+    
+    public void suspendTask3() {
+       suspended = true;
+    }
+   
+    synchronized public void resumeTask3() {
+       suspended = false;
+       notify();
     }
     
     // the following two methods allow property change listeners to be added

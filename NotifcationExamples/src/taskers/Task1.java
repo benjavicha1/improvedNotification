@@ -16,10 +16,11 @@ import javafx.application.Platform;
  * To accomplish this the Notifiable interface is needed.
  * 
  */
-public class Task1 extends Thread {
+public class Task1 extends Thread { //implements Runnable {
     
     private int maxValue, notifyEvery;
     boolean exit = false;
+    private boolean suspended = false;
     
     private Notifiable notificationTarget;
     
@@ -33,6 +34,16 @@ public class Task1 extends Thread {
         doNotify("Task1 start.");
         for (int i = 0; i < maxValue; i++) {
             
+            synchronized(this) {
+                if (suspended) {
+                    try {
+                        wait();
+                    } catch (InterruptedException ex) {
+                        break;
+                    }
+                }
+            }
+             
             if (i % notifyEvery == 0) {
                 doNotify("It happened in Task1: " + i);
             }
@@ -48,12 +59,20 @@ public class Task1 extends Thread {
         exit = true;
     }
     
+    public void suspendTask1() {
+       suspended = true;
+    }
+   
+    synchronized public void resumeTask1() {
+       suspended = false;
+       notify();
+    }
+    
     public void setNotificationTarget(Notifiable notificationTarget) {
         this.notificationTarget = notificationTarget;
     }
     
     private void doNotify(String message) {
-        // this provides the notification through a method on a passed in object (notificationTarget)
         if (notificationTarget != null) {
             Platform.runLater(() -> {
                 notificationTarget.notify(message);

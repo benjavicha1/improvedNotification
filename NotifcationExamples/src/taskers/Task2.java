@@ -21,6 +21,7 @@ public class Task2 extends Thread {
     
     private int maxValue, notifyEvery;
     boolean exit = false;
+    private boolean suspended = false;
     
     private ArrayList<Notification> notifications = new ArrayList<>();
     
@@ -35,6 +36,16 @@ public class Task2 extends Thread {
         
         for (int i = 0; i < maxValue; i++) {
             
+            synchronized(this) {
+                if (suspended) {
+                    try {
+                        wait();
+                    } catch (InterruptedException ex) {
+                        break;
+                    }
+                }
+            }
+            
             if (i % notifyEvery == 0) {
                 doNotify("It happened in Task2: " + i);
             }
@@ -42,6 +53,8 @@ public class Task2 extends Thread {
             if (exit) {
                 return;
             }
+            
+            
         }
         doNotify("Task2 done.");
     }
@@ -50,16 +63,23 @@ public class Task2 extends Thread {
         exit = true;
     }
     
-    // this method allows a notification handler to be registered to receive notifications
+    public void suspendTask2() {
+       suspended = true;
+    }
+   
+    synchronized public void resumeTask2() {
+       suspended = false;
+       notify();
+    }
+    
     public void setOnNotification(Notification notification) {
         this.notifications.add(notification);
     }
     
     private void doNotify(String message) {
-        // this provides the notification through the registered notification handler
         for (Notification notification : notifications) {
             Platform.runLater(() -> {
-                notification.handle(message);
+                notification.handle(message); 
             });
         }
     }
